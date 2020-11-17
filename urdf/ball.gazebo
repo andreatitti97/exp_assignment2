@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot>
+  <!-- materials -->
+ 
+  
+  <gazebo reference="ball_link">
+    <material>Gazebo/Green</material>
+  </gazebo>
+  
+  <gazebo reference="ball_link">
+    <turnGravityOff>true</turnGravityOff>
+  </gazebo>
+
+
+  <gazebo>
+    <plugin name="object_controller" filename="libgazebo_ros_planar_move.so">
+      <commandTopic>cmd_vel</commandTopic>
+      <odometryTopic>odom</odometryTopic>
+      <odometryFrame>odom</odometryFrame>
+      <odometryRate>20.0</odometryRate>
+      <robotBaseFrame>ball_link</robotBaseFrame>
+    </plugin>
+  </gazebo>  
+</robot>
