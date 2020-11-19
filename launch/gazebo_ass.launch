@@ -61,7 +61,6 @@
   <group ns="$(arg ns1)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
 	args="-urdf -model $(arg ns1) -param robot_description -x -5 -y 7 -Y 3.14 -z 0.05"/>
-	<!--<node name="example_ball" pkg="exp_assignment2" type="robot_controller.py" />-->
   </group>
   
   <group ns="$(arg ns2)">
