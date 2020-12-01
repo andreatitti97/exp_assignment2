@@ -8,15 +8,19 @@
   <!-- materials -->
 <xacro:include filename="$(find exp_assignment2)/urdf/materials.xacro" />
  <xacro:include filename="$(find exp_assignment2)/urdf/robot.gazebo" />
- <xacro:property name="length_wheel" value="0.05" />
- <xacro:property name="radius_wheel" value="0.15" /> 
+ <xacro:property name="length_wheel" value="0.04" />
+ <xacro:property name="radius_wheel" value="0.10" /> 
  <xacro:property name="neck_length" value="0.1" />
- <xacro:property name="neck_radius" value="0.04" />
+ <xacro:property name="neck_radius" value="0.03" />
  <xacro:property name="camera_link" value="0.05" /> <!-- Size of square 'camera' box -->
 
  <xacro:macro name="cylinder_inertia" params="mass r l"> 
     <inertia ixx="${mass*(3*r*r+l*l)/12}" ixy = "0" ixz = "0"
                 iyy="${mass*(3*r*r+l*l)/12}" iyz = "0" izz="${mass*(r*r)/2}" /> 
+ </xacro:macro>
+
+ <xacro:macro name="sphere_inertia" params="mass r">
+	<inertia ixx="${(mass*r*r)/4" ixy = "0" ixz = "0" iyy="${(mass*r*r)/4" iyx = "0" iyz  = "0" izz="${(mass*r*r)/2" />
  </xacro:macro>
 
  <xacro:macro name="box_inertia" params="mass w h d"> 
@@ -205,12 +209,12 @@
       </geometry>
       <material name="red" />
   	</visual>
-  </link>
+</link>
 
   <joint name="head_joint" type="revolute">
   	<axis xyz="0 0 1"/>
   	<limit effort="1000.0" lower="-1.8" upper="1.8" velocity="0.5"/>
-  	<origin rpy="0 0 0" xyz="0 0 ${neck_length}"/>
+  	<origin rpy="0 0 0" xyz="0.15 0 ${neck_length}"/>
   	<parent link="neck_link"/>
   	<child link="head_link"/>
   </joint>
