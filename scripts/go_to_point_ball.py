@@ -142,7 +142,7 @@ def planning(goal):
 
 def main():
     global pub, active_, act_s, pubz
-    rospy.init_node('go_to_point')
+    rospy.init_node('goto_point')
     pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
     pubz = rospy.Publisher('/gazebo/set_link_state', LinkState, queue_size=1)
     sub_odom = rospy.Subscriber('odom', Odometry, clbk_odom)

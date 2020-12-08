@@ -58,10 +58,13 @@
   <node name="urdf_spawner_human1" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
         args="-urdf -model human1 -param human_description1 -x -7 -y 7 -z 0.34 -R 0 -P 0 -Y 0"/>
 
-  <group ns="$(arg ns1)">
+ <group ns="$(arg ns1)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
 	args="-urdf -model $(arg ns1) -param robot_description -x -5 -y 7 -Y 3.14 -z 0.05"/>
-  </group>
+        <node name = "ball_detect" pkg="exp_assignment2" type="ball_detect.py" />
+        <node name = "navigation" pkg="exp_assignment2" type="navigation.py"/>
+        <node name = "cmd_manager" pkg="exp_assignment2" type="cmd_manager.py" output = "screen" />
+</group>
   
   <group ns="$(arg ns2)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"

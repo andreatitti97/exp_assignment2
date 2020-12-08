@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<robot>
+<robot name="robot" xmlns:xacro="https://www.ros.org/wiki/xacro" >
 
 <gazebo reference="base_link">
     <material>Gazebo/Orange</material>

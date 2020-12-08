@@ -23,8 +23,9 @@ import actionlib
 import actionlib_tutorials.msg
 
 from std_msgs.msg import String
-from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from assignment2.msg import ball_status
 
 from exp_assignment2.srv import *
 
@@ -58,12 +59,18 @@ client = actionlib.SimpleActionClient('/robot_reaching_goal', motion_plan.msg.Pl
 def decision():
     return random.choice(['goToNormal','goToSleep'])
 
+## Callback function for the ballDetection subsriber.
+# Which recives and handle a ball_state msg   
+def callbackBall(data):
+    rospy.loginfo("ball detected")
+    global state
+    state = data.ballDetected 
  
 ## Callback for 'user_cmd' subscriber  
-def callbackSta(data): 
-    rospy.loginfo(rospy.get_caller_id() + " Received cmd %s", data.data)
-    global user_cmd 
-    user_cmd = "play"
+##def callbackSta(data): 
+    ##rospy.loginfo(rospy.get_caller_id() + " Received cmd %s", data.data)
+    ##global user_cmd 
+    ##user_cmd = "play"
 
 
 ## Define state NORMAL
@@ -86,8 +93,8 @@ class Normal(smach.State):
 
 	while not rospy.is_shutdown():  
             
-            if user_cmd == "play":
-                user_cmd = 'noInput'
+            if state == True:
+                user_cmd = False
                 return 'goToPlay'
             if self.counter == 5:
                 return 'goToSleep'           
@@ -95,7 +102,8 @@ class Normal(smach.State):
 	    goal.target_pose.pose.position.x = random.randrange(1,5,1)
             goal.target_pose.pose.position.y = random.randrange(1,5,1)
 	    client.send_goal(goal)
-	    client.wait_for_result()	
+	    client.wait_for_result()
+	    time.sleep(5)	
             self.counter += 1
             
         return 'goToSleep' 
@@ -120,7 +128,7 @@ class Sleep(smach.State):
         goal.target_pose.pose.position.y = homeY
         client.send_goal(goal)
         client.wait_for_result()       
-	time.sleep(random.randint(3,6))gate to the home
+	time.sleep(random.randint(3,6)
         self.rate.sleep()
         return 'goToNormal'
 
@@ -147,7 +155,7 @@ class Play(smach.State):
 def main():
     rospy.init_node('cmd_manager')
  
-    rospy.Subscriber("cmd_string", String, callbackSta)
+    rospy.Subscriber("ball_status",ball_status, callbackBall)
     client.wait_for_server()
 
     # Create a SMACH state machine
