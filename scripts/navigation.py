@@ -20,10 +20,10 @@ state_ = 0
 desired_position_ = Point()
 desired_position_.z = 0
 ## parameters
-yaw_precision_ = math.pi / 9  # +/- 20 degree allowed
-yaw_precision_2_ = math.pi / 90  # +/- 2 degree allowed
+yaw_precision_ = math.pi / 9  
+yaw_precision_2_ = math.pi / 90  
 dist_precision_ = 0.1
-kp_a = 3.0  ## In ROS Noetic, it may be necessary to change the sign of this proportional controller
+kp_a = 3.0   
 kp_d = 0.2
 ub_a = 0.6
 lb_a = -0.5
@@ -195,8 +195,8 @@ def planning(goal):
 def main():
     global pub, active_, act_s
     rospy.init_node('navigation')
-    pub = rospy.Publisher('/robotDog/cmd_vel', Twist, queue_size=1)
-    sub_odom = rospy.Subscriber('/robotDog/odom', Odometry, clbk_odom)
+    pub = rospy.Publisher('/robot/cmd_vel', Twist, queue_size=1)
+    sub_odom = rospy.Subscriber('/robot/odom', Odometry, clbk_odom)
     #creazione action server (che sara il mio navigaiton)
     #  parameters : name, dove prendere il file action, callback function (planning ) 
     
