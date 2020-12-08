@@ -25,7 +25,7 @@ import actionlib_tutorials.msg
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from assignment2.msg import ball_status
+from exp_assignment2.msg import ball_status
 
 from exp_assignment2.srv import *
 
