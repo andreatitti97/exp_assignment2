@@ -23,6 +23,7 @@
    <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen" args="--namespace=/robot
         joint_state_controller
         joint_head_controller
+
         --shutdown-timeout 3">
     </node>
 	
