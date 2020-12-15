@@ -65,7 +65,7 @@
         <node name = "navigation" pkg="exp_assignment2" type="navigation.py"/>
         <node name = "cmd_manager" pkg="exp_assignment2" type="cmd_manager.py" output = "screen" />
 
-	<rosparam file="$(find exp_assignment2)/config/robot_motor.yaml" command="load" ns="/robotDog" />
+	<rosparam file="$(find exp_assignment2)/config/robot_motor.yaml" command="load" ns="/robot" />
 
 	<node name="controller_spawner" pkg="controller_manager" type="spawner" args="--namespace=/robotDog
 		joint_state_controller
@@ -75,9 +75,9 @@
 </group>
   
   <group ns="$(arg ns2)">
-  	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-	args="-urdf -model $(arg ns2) -param ball_description -x -7 -y 6 -z 0.25"/>
-	<node name="navigation_ball" pkg="exp_assignment2" type="navigation_ball.py" output="screen" />
+  	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" 
+	args="-urdf -model $(arg ns2) -param ball_description -x -7 -y 6 -z -1"/>
+	<node name="go_to_point" pkg="exp_assignment2" type="go_to_point.py" />
   </group>
 
 </launch>

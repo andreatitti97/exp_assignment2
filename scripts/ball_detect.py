@@ -16,7 +16,7 @@ import cv2
 # Ros libraries
 import roslib
 import rospy
-
+import importlib
 # Ros Messages
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Twist

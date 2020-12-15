@@ -1,7 +1,0 @@
-
-int64 x
-int64 y
----
-int64 currentX
-int64 currentY
-bool ok

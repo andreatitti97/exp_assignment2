@@ -9,7 +9,7 @@ from tf import transformations
 import math
 import actionlib
 import actionlib.msg
-import exp_assignment2.msg
+from exp_assignment2.msg import Planning_ballAction, Planning_ballGoal, Planning_ballResult, Planning_ballFeedback
 
 # robot state variables
 position_ = Point()
@@ -111,8 +111,8 @@ def planning(goal):
     rate = rospy.Rate(20)
     success = True
 
-    feedback = exp_assignment2.msg.PlanningFeedback()
-    result = exp_assignment2.msg.PlanningResult()
+    feedback = Planning_ballFeedback()
+    result = Planning_ballResult()
 
     while not rospy.is_shutdown():
         if act_s.is_preempt_requested():
@@ -142,12 +142,12 @@ def planning(goal):
 
 def main():
     global pub, active_, act_s, pubz
-    rospy.init_node('navigation_ball')
+    rospy.init_node('go_to_point')
     pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
     pubz = rospy.Publisher('/gazebo/set_link_state', LinkState, queue_size=1)
     sub_odom = rospy.Subscriber('odom', Odometry, clbk_odom)
     act_s = actionlib.SimpleActionServer(
-        '/reaching_goal', exp_assignment2.msg.PlanningAction, planning, auto_start=False)
+        'reaching_goal', Planning_ballAction, planning, auto_start=False)
     act_s.start()
 
     rate = rospy.Rate(20)
@@ -158,3 +158,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

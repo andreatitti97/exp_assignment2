@@ -11,6 +11,8 @@
 
 from __future__ import print_function
 
+import importlib 
+
 import roslib
 import rospy
 import smach
@@ -27,8 +29,6 @@ from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from exp_assignment2.msg import ball_status
-
-from exp_assignment2.srv import *
 
 ## robot X position variable
 # @param X initial X pos of the robot
@@ -111,7 +111,7 @@ class Normal(smach.State):
             goal.target_pose.pose.position.y = y_rand
 	    client.send_goal(goal)
 	    client.wait_for_result()
-	    rospy-loginfo(" Reach the Goal")
+	    rospy.loginfo(" Reach the Goal")
 	    time.sleep(5)	
             self.counter += 1
             
