@@ -20,6 +20,7 @@ import rospy
 # Ros Messages
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Float64
 from exp_assignment2.msg import ball_status
 
 VERBOSE = False
@@ -35,14 +36,22 @@ class image_feature:
      ## @param image_pub publisher that send the processed and compressed images 
         self.image_pub = rospy.Publisher("/output/image_raw/compressed",
                                          CompressedImage, queue_size=1)
+     
+     ## @param vel_pub pub for send to the command manager information reguarding the ball and the corraction to       		##apply to the robot 
+	self.ball_state_pub = rospy.Publisher("ball_status",ball_status, queue_size=1)
+     
+     ## @param joint_pub to move the head of the robot 
+	self.joint_pub = rospy.Publisher("joint_head_controller/command",Float64,queue_size=1)
+
      ## @param vel_pub pub for send to the command manager information reguarding the ball and the corraction to       		##apply to the robot 
         self.vel_pub = rospy.Publisher("ball_status",ball_status, queue_size=1)
 
         ## subscribed Topic
 	### @param subsriber to get the compressed images from the camera  
-        self.subscriber = rospy.Subscriber("camera1/image_raw/compressed",
+        self.camera_sub = rospy.Subscriber("camera1/image_raw/compressed",
                                            CompressedImage, self.callback,  queue_size=1)
-
+  	## @stop it's a stop condition when the robot is too close to the goal 
+	self.stop = False
 
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
@@ -91,15 +100,30 @@ class image_feature:
                 
                 msg = ball_status()
                 msg.ballDetected = True 		        
-		msg.vel_angular_z = -0.002*(center[0]-400)
-                self.vel_pub.publish(msg)
+		self.ball_state_pub.publish(msg)
+		if self.stop == False: 
+			
+                	vel = Twist()
+                	# 400 is the center of the image 
+                	vel.angular.z = -0.002*(center[0]-400)
+			# 100 is the radius that we want see in the image, which represent the 								desired disatance from the object 
+                	vel.linear.x = -0.01*(radius-130)
+                	self.vel_pub.publish(vel)
+			if radius > 129:
+				self.stop = True
+		else:
+			self.joint_pub.publish(0.785398) 
+			time.sleep(5)
+			self.joint_pub.publish(-0.785398)
+			time.sleep(5)
+			self.joint_pub.publish(0)
+			time.sleep(5)
+			self.stop = False
 
         else:
 	     msg = ball_status()
              msg.ballDetected = False
-	     msg.vel_angular_z = 0.5
-	     msg.vel_lin_x = 0.5
-             # FAR GIRARE LA TELECAMERA 
+	     self.ball_state_pub.publish(msg)
              self.vel_pub.publish(msg)
             
 
@@ -122,4 +146,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-main(sys.argv)
+	main(sys.argv)

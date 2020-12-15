@@ -23,6 +23,7 @@ import actionlib
 import actionlib_tutorials.msg
 
 from std_msgs.msg import String
+from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from exp_assignment2.msg import ball_status
@@ -43,15 +44,15 @@ homeX = 0.3
 homeY = 0
 ## State variable
 # @param state variable that save the PLAY state coming from the user, if sended 
-user_cmd = "NoCmd"
-
+#user_cmd = "NoCmd"
 ## User Position X
 # @param userX is the x position of the user
-userX = 0.2
+#userX = 0.2
 ## User Position Y
 # @param userY is the y position of the user
-userY = 0
-
+#userY = 0
+ball_detc = False
+ball_check = False
 ##initialization action.client for Navigation server
 client = actionlib.SimpleActionClient('/robot_reaching_goal', motion_plan.msg.PlanningAction)
 
@@ -62,9 +63,13 @@ def decision():
 ## Callback function for the ballDetection subsriber.
 # Which recives and handle a ball_state msg   
 def callbackBall(data):
-    rospy.loginfo("ball detected")
-    global state
-    state = data.ballDetected 
+    global ball_detc, ball_check
+    ball_detc = data.ball_detc
+    if ball_detc == True and ball_check == False:
+	    ball_check = True
+	    rospy.loginfo("ball detected")
+	    client.cancel_all_goals()
+    
  
 ## Callback for 'user_cmd' subscriber  
 ##def callbackSta(data): 
@@ -85,7 +90,7 @@ class Normal(smach.State):
         
     def execute(self,userdata):
 
-        global user_cmd
+        global ball_detc
         
         self.counter = random.randint(1,2) #For randomize the switch to SLEEP state 
 	# Goal for server        
@@ -93,16 +98,20 @@ class Normal(smach.State):
 
 	while not rospy.is_shutdown():  
             
-            if state == True:
-                user_cmd = False
+            if ball_check == True: 
+		rospy.loginfo("Tracking the ball")
                 return 'goToPlay'
             if self.counter == 5:
                 return 'goToSleep'           
             # Request to service for navigate
-	    goal.target_pose.pose.position.x = random.randrange(1,5,1)
-            goal.target_pose.pose.position.y = random.randrange(1,5,1)
+	    x_rand = random.randrange(1,5,1)
+	    y_rand = random.randrange(1,5,1)
+	    rospy.loginfo("reaching position x = %d y = %d", x_rand,y_rand)
+	    goal.target_pose.pose.position.x = x_rand
+            goal.target_pose.pose.position.y = y_rand
 	    client.send_goal(goal)
 	    client.wait_for_result()
+	    rospy-loginfo(" Reach the Goal")
 	    time.sleep(5)	
             self.counter += 1
             
@@ -127,8 +136,9 @@ class Sleep(smach.State):
         goal.target_pose.pose.position.x = homeX
         goal.target_pose.pose.position.y = homeY
         client.send_goal(goal)
-        client.wait_for_result()       
-	time.sleep(random.randint(3,6)
+        client.wait_for_result()  
+	rospy.loginfo("Reach the Home")     
+	time.sleep(random.randint(3,6))
         self.rate.sleep()
         return 'goToNormal'
 
@@ -142,13 +152,16 @@ class Play(smach.State):
 
     def execute(self, userdata):
         
-        global X
-        global Y 
-
     	rospy.loginfo("PLAY mode")
-	time.sleep(3)
 
-        return 'goToNormal'       
+	while True:
+		if(ball_detc == False):
+			ball_check = False
+			rospy.loginfo("Ball Lost")
+			return 'goToNormal' 
+			time.sleep(3)
+
+              
 
 
         
@@ -168,15 +181,15 @@ def main():
         smach.StateMachine.add('NORMAL', Normal(), 
                                transitions={'goToSleep':'SLEEP', 
                                             'goToPlay':'PLAY',
-                                            'goToNormal':'NORMAL'},
+                                            'goToNormal':'NORMAL'})
                                
         smach.StateMachine.add('SLEEP', Sleep(), 
                                transitions={'goToSleep':'SLEEP', 
-                                            'goToNormal':'NORMAL'},
+                                            'goToNormal':'NORMAL'})
                                
         smach.StateMachine.add('PLAY', Play(), 
                                transitions={'goToNormal':'NORMAL',
-                                            'goToPlay':'PLAY'},
+                                            'goToPlay':'PLAY'})
                                
 
 
@@ -193,4 +206,4 @@ def main():
 
 
 if __name__ == '__main__':
-main()
+	main()
