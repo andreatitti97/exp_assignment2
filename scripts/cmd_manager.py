@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
-## @package cmd_manager
-#  This node is the core of the system, subscribe to 'position' topic and 'cmd_string' topic, and is the client of the 'navigation' service.
-#  In this node is implemented the Finite State Machine 
-#  which manage the switch between states according to the information coming from the other nodes.
+## @file commandManager.py
+#  This node includes the subsription to State and GetPosition publishers,
+#  And implement a finite state machine 
+#  which manages the information coming from the two publisher and changes the state of the system in according to them.
+# \see getPosition.cpp
+# \see Navigation.cpp
+# \see State.cpp
  
-## Documentation for a function.
-#
-#  More details.
 
 from __future__ import print_function
-
-import importlib 
 
 import roslib
 import rospy
@@ -23,151 +21,159 @@ import sys
 import motion_plan.msg
 import actionlib
 import actionlib_tutorials.msg
+import random 
 
 from std_msgs.msg import String
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from exp_assignment2.msg import ball_status
+from exp_assignment2.msg import head_status
 
-## robot X position variable
-# @param X initial X pos of the robot
-X = 0  
-## robot Y position variable
-# @param Y initial Y pos of the robot
-Y = 0
-## home X position
-# @param homeX inital X pos of the home
-homeX = 0.3
-## home Y position
-# @param homeY inital Y pos of the house
-homeY = 0
+
+
+## X position of the home 
+# @param homeX here you can set the a priori X position of the house
+homeX = -5
+## Y position of the home 
+# @param homeY here you can set the a priori Y position of the house
+homeY = 7
 ## State variable
-# @param state variable that save the PLAY state coming from the user, if sended 
-#user_cmd = "NoCmd"
-## User Position X
-# @param userX is the x position of the user
-#userX = 0.2
-## User Position Y
-# @param userY is the y position of the user
-#userY = 0
+# @param state This is the state coming from State node (that's why is a string) and it can be ether play or NoInfo 
 ball_detc = False
 ball_check = False
-##initialization action.client for Navigation server
-client = actionlib.SimpleActionClient('/robot_reaching_goal', motion_plan.msg.PlanningAction)
+ball_reach = False
 
-## Function that randomize the choice for choosing states NORMAL and SLEEP
+
+##init action client for Navigation action server
+client = actionlib.SimpleActionClient('/robot_reaching_goal', motion_plan.msg.PlanningAction)
+# AATTT ho messo wait server nel main
+
+
+## This function chose randomly the next state of the FSM
 def decision():
     return random.choice(['goToNormal','goToSleep'])
+ 
 
 ## Callback function for the ballDetection subsriber.
 # Which recives and handle a ball_state msg   
 def callbackBall(data):
-    global ball_detc, ball_check
+    global ball_detc, ball_check, ball_reach
     ball_detc = data.ball_detc
+    ball_reach = data.ball_reach
+    #rospy.loginfo( ball_check)
     if ball_detc == True and ball_check == False:
-	    ball_check = True
-	    rospy.loginfo("ball detected")
-	    client.cancel_all_goals()
-    
- 
-## Callback for 'user_cmd' subscriber  
-##def callbackSta(data): 
-    ##rospy.loginfo(rospy.get_caller_id() + " Received cmd %s", data.data)
-    ##global user_cmd 
-    ##user_cmd = "play"
+	rospy.loginfo("I'm updating the ball_checkvalue")
+	ball_check = True
+        rospy.loginfo("Ball detected !, current action interrupt")
+	client.cancel_all_goals() 
 
-
-## Define state NORMAL
 class Normal(smach.State):
     def __init__(self):
-        # Init of the function
         smach.State.__init__(self, 
                              outcomes=['goToNormal','goToSleep','goToPlay'])
-                             
-        self.rate = rospy.Rate(1) 
+        self.rate = rospy.Rate(1)  # Loop at 200 Hz
+	## @param joint_pub to move the head of the robot 
         self.counter = 0
         
     def execute(self,userdata):
 
         global ball_detc
         
-        self.counter = random.randint(1,2) #For randomize the switch to SLEEP state 
-	# Goal for server        
-	goal = motion_plan.msg.PlanningGoal()
+        self.counter = random.randint(1,2) 
+        # Creates a goal to send to the action server.
+        goal = motion_plan.msg.PlanningGoal()
 
-	while not rospy.is_shutdown():  
-            
-            if ball_check == True: 
-		rospy.loginfo("Tracking the ball")
+        while not rospy.is_shutdown():  
+
+            if ball_check == True and ball_detc == True:
+		rospy.loginfo("Start to track the ball")
                 return 'goToPlay'
-            if self.counter == 5:
+            if self.counter == 4:
                 return 'goToSleep'           
-            # Request to service for navigate
-	    x_rand = random.randrange(1,5,1)
-	    y_rand = random.randrange(1,5,1)
-	    rospy.loginfo("reaching position x = %d y = %d", x_rand,y_rand)
-	    goal.target_pose.pose.position.x = x_rand
-            goal.target_pose.pose.position.y = y_rand
+            # request for the service to move in X and Y position
+	    xRandomGoal = random.randrange(1,5,1)
+	    yRandomGoal = random.randrange(1,5,1)
+	    rospy.loginfo("I'm going to position x = %d y = %d", xRandomGoal, yRandomGoal)
+            goal.target_pose.pose.position.x = xRandomGoal
+            goal.target_pose.pose.position.y = yRandomGoal
 	    client.send_goal(goal)
-	    client.wait_for_result()
-	    rospy.loginfo(" Reach the Goal")
-	    time.sleep(5)	
+            client.wait_for_result()
+	    rospy.loginfo("Goal reached")
+            time.sleep(2)
+	    self.rate.sleep()
             self.counter += 1
             
         return 'goToSleep' 
         
     
 
-## Define state SLEEP
+## It defines the SLEEP state which sleeps for a random period of time.
+# Then it makes a request to the Navigation service to go to the home location.
+# Finally it returns in the NORMAL state
 class Sleep(smach.State):
     def __init__(self):
         smach.State.__init__(self, 
                              outcomes=['goToNormal','goToSleep'])
         self.rate = rospy.Rate(200)  # Loop at 200 Hz
 
-    def execute(self, userdata):
-        
+    def execute(self, userdata):       
         global homeX
         global homeY
 
-        rospy.loginfo("SLEEP mode")
+        rospy.loginfo("I m in SLEEP mode")
         goal = motion_plan.msg.PlanningGoal()
         goal.target_pose.pose.position.x = homeX
         goal.target_pose.pose.position.y = homeY
         client.send_goal(goal)
-        client.wait_for_result()  
-	rospy.loginfo("Reach the Home")     
-	time.sleep(random.randint(3,6))
+
+        client.wait_for_result()       
+	rospy.loginfo("Home reached")
+        time.sleep(random.randint(3,6))
         self.rate.sleep()
         return 'goToNormal'
 
-## Define state PLAY
+## Class that defines the PLAY state. 
+# It move the robot in X Y location and then asks to go back to the user.
 class Play(smach.State):
     def __init__(self):
         smach.State.__init__(self, 
                              outcomes=['goToNormal','goToPlay'])
         
-        self.rate = rospy.Rate(200)  # Loop at 200 Hz
+        self.rate = rospy.Rate(200)
+	self.joint_pub = rospy.Publisher("joint_head_controller/command",Float64,queue_size=1)  
+	self.head_status = rospy.Publisher("head_state",head_status, queue_size = 1)
 
     def execute(self, userdata):
-        
-    	rospy.loginfo("PLAY mode")
+
+        rospy.loginfo("I m in PLAY mode")
+	global ball_detc, ball_check, ball_reach
 
 	while True:
-		if(ball_detc == False):
-			ball_check = False
-			rospy.loginfo("Ball Lost")
-			return 'goToNormal' 
-			time.sleep(3)
-
-              
-
+             if(ball_detc == False): 
+		ball_check = False
+		rospy.loginfo("Ball lost")
+                return 'goToNormal' 
+	     if(ball_reach == True):
+                rospy.loginfo("ball reached !!!")
+		self.joint_pub.publish(0.785398) 
+		time.sleep(5)
+		self.joint_pub.publish(-0.785398)
+		time.sleep(5)
+		self.joint_pub.publish(0)
+		time.sleep(5)
+		rospy.loginfo("Finito di muovere la testa ")
+		headMsg = head_status()
+		headMsg.head_stop = True
+		self.head_status.publish(headMsg) 
+                
+	     time.sleep(3)      
+	
 
         
 def main():
     rospy.init_node('cmd_manager')
- 
+     
     rospy.Subscriber("ball_status",ball_status, callbackBall)
     client.wait_for_server()
 
@@ -182,28 +188,23 @@ def main():
                                transitions={'goToSleep':'SLEEP', 
                                             'goToPlay':'PLAY',
                                             'goToNormal':'NORMAL'})
-                               
         smach.StateMachine.add('SLEEP', Sleep(), 
                                transitions={'goToSleep':'SLEEP', 
                                             'goToNormal':'NORMAL'})
-                               
         smach.StateMachine.add('PLAY', Play(), 
                                transitions={'goToNormal':'NORMAL',
                                             'goToPlay':'PLAY'})
-                               
 
 
-    # Create and start the introspection server for visualization
     sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
     sis.start()
 
-    # Execute the state machine
     outcome = sm.execute()
 
-    # Wait for ctrl-c to stop the application
     rospy.spin()
     sis.stop()
 
 
 if __name__ == '__main__':
-	main()
+    main()
+

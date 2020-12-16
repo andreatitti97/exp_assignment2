@@ -37,47 +37,53 @@
   <group if="$(arg use_clock_frequency)">
     <param name="gazebo/pub_clock_frequency" value="$(arg pub_clock_frequency)" />
   </group>
-  <node name="gazebo" pkg="gazebo_ros" type="$(arg script_type)" respawn="$(arg respawn_gazebo)" output="screen"
+  <node name="gazebo" pkg="gazebo_ros" type="$(arg script_type)" respawn="$(arg respawn_gazebo)" 
 	args="$(arg command_arg1) $(arg command_arg2) $(arg command_arg3) -e $(arg physics) $(arg extra_gazebo_args) $(arg world_name)" />
 	
   <!-- start gazebo client -->
   <group if="$(arg gui)">
-    <node name="gazebo_gui" pkg="gazebo_ros" type="gzclient" respawn="false" output="screen"/>
+    <node name="gazebo_gui" pkg="gazebo_ros" type="gzclient" respawn="false" />
   </group>
+
+  <!-- namescpaces -->
 
   <arg name="ns1" value="robot"/>
   <param name="$(arg ns1)/robot_description" 
 	 command="$(find xacro)/xacro --inorder $(find exp_assignment2)/urdf/robot.xacro" />
 	
   <arg name="ns2" value="ball"/> 
-	 <param name="$(arg ns2)/ball_description" 
+  <param name="$(arg ns2)/ball_description" 
 	 command="$(find xacro)/xacro --inorder $(find exp_assignment2)/urdf/ball.xacro" />
 	
-	 <param name="human_description1" textfile="$(find exp_assignment2)/urdf/human.urdf" />
+  <param name="human_description1" textfile="$(find exp_assignment2)/urdf/human.urdf" />
       
-  <node name="urdf_spawner_human1" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+  <node name="urdf_spawner_human1" pkg="gazebo_ros" type="spawn_model" respawn="false" 
         args="-urdf -model human1 -param human_description1 -x -7 -y 7 -z 0.34 -R 0 -P 0 -Y 0"/>
 
- <group ns="$(arg ns1)">
-  	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false"
-	args="-urdf -model $(arg ns1) -param robot_description -x -5 -y 7 -Y 3.14 -z 0.05"/>
-        <node name = "ball_detection" pkg="exp_assignment2" type="ball_detect.py" />
-        <node name = "navigation" pkg="exp_assignment2" type="navigation.py"/>
-        <node name = "cmd_manager" pkg="exp_assignment2" type="cmd_manager.py" output = "screen" />
+  <group ns="$(arg ns1)">
+  	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" 
+	args="-urdf -model $(arg ns1) -param robot_description -x 0 -y 0 -Y 3.14 -z 0.05"/>
+        <node name ="cvtest" pkg="exp_assignment2" type="cv_test.py" output="screen" />
+        <node name="controller_spawner" pkg="controller_manager" type="spawner" output="screen" args="--namespace=/robot
+        joint_state_controller
+        joint_head_controller
 
-	<rosparam file="$(find exp_assignment2)/config/robot_motor.yaml" command="load" ns="/robot" />
+        --shutdown-timeout 3">
+        </node>
 
-	<node name="controller_spawner" pkg="controller_manager" type="spawner" args="--namespace=/robot
-		joint_state_controller
-		joint_head_controller
-		--shutdown-timeout 3">
-	</node>
-</group>
+
+  </group>
   
   <group ns="$(arg ns2)">
   	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" 
-	args="-urdf -model $(arg ns2) -param ball_description -x -7 -y 6 -z -1"/>
+	args="-urdf -model $(arg ns2) -param ball_description -x -4 -y 2 -z -0.5"/>
 	<node name="position_server" pkg="exp_assignment2" type="go_to_point_ball.py" />
   </group>
 
+   <rosparam file="$(find exp_assignment2)/config/robot_motor.yaml" command="load" ns="/robot" />
+
+
+
+
 </launch>
+

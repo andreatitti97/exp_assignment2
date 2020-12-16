@@ -8,17 +8,18 @@ project(exp_assignment2)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
-  image_transport
   roscpp
   rospy
+  actionlib_msgs
+  actionlib
+  cv_bridge
+  image_transport
   sensor_msgs
-  nav_msgs
   geometry_msgs
+  nav_msgs
   std_msgs
   message_generation
   tf
-  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -56,11 +57,11 @@ find_package (OpenCV REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+ add_message_files(
+   FILES
+   ball_status.msg
+   head_status.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -73,7 +74,7 @@ find_package (OpenCV REQUIRED)
  add_action_files(
    FILES
    Planning.action
-#   Action2.action
+   Planning_Ball.action
  )
 
 ## Generate added messages and services with any dependencies listed here
@@ -81,6 +82,7 @@ find_package (OpenCV REQUIRED)
    DEPENDENCIES
    geometry_msgs
    actionlib_msgs
+   std_msgs
  )
 
 ################################################
@@ -115,8 +117,8 @@ find_package (OpenCV REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES bridge_example
-#  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs
-  DEPENDS OpenCV
+  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs OpenCv message_runtime
+  #DEPENDS OpenCV
 )
 
 ###########
@@ -176,7 +178,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
  install(PROGRAMS
-   scripts/go_to_point_ball.py
+   scripts/cmd_manager.py scripts/navigation.py scripts/go_to_point_ball.py scripts/ball_detect.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
