@@ -1,6 +1,7 @@
 #! /usr/bin/env python
-# import ros stuff
+
 import rospy
+import time
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist, Point, Pose
 from nav_msgs.msg import Odometry
@@ -9,7 +10,7 @@ from tf import transformations
 import math
 import actionlib
 import actionlib.msg
-from exp_assignment2.msg import Planning_ballAction, Planning_ballGoal, Planning_ballResult, Planning_ballFeedback
+from exp_assignment2.msg import Planning_BallAction, Planning_BallGoal, Planning_BallResult, Planning_BallFeedback
 
 # robot state variables
 position_ = Point()
@@ -111,8 +112,8 @@ def planning(goal):
     rate = rospy.Rate(20)
     success = True
 
-    feedback = Planning_ballFeedback()
-    result = Planning_ballResult()
+    feedback = Planning_BallFeedback()
+    result = Planning_BallResult()
 
     while not rospy.is_shutdown():
         if act_s.is_preempt_requested():
@@ -147,7 +148,7 @@ def main():
     pubz = rospy.Publisher('/gazebo/set_link_state', LinkState, queue_size=1)
     sub_odom = rospy.Subscriber('odom', Odometry, clbk_odom)
     act_s = actionlib.SimpleActionServer(
-        'reaching_goal', Planning_ballAction, planning, auto_start=False)
+        'reaching_goal', Planning_BallAction, planning, auto_start=False)
     act_s.start()
 
     rate = rospy.Rate(20)

@@ -21,7 +21,7 @@ import rospy
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float64
-from exp_assignment2.msg import Ball_state
+from exp_assignment2.msg import ball_status
 
 VERBOSE = False
 
@@ -30,32 +30,32 @@ class image_feature:
 
     def __init__(self):
         '''Initialize ros publisher, ros subscriber'''
-     ## initialize the node 
-        rospy.init_node('ballDetection', anonymous=True)
-     ## topic where we publish
-     ## @param image_pub publisher that send the processed and compressed images 
+     	## initialize the node 
+        rospy.init_node('ball_detection', anonymous=True)
+     	## PUBLISHERs 
+     	## @param image_pub: ros_publisher that send the compressed image. 
         self.image_pub = rospy.Publisher("/output/image_raw/compressed",
                                          CompressedImage, queue_size=1)
-     ## @param vel_pub pub for send to the command manager information reguarding the ball and the corraction to       		##apply to the robot 
-        self.ball_state_pub = rospy.Publisher("ball_state",Ball_state, queue_size=1)
+     	## @param ball_status_pub: ros_publisher where we can find the INFO of the ball -> 2 bool one for check detection one for check if ball reached. 
+        self.ball_status_pub = rospy.Publisher("ball_status",ball_status, queue_size=1)
 
-     ## @param joint_pub to move the head of the robot 
+     	## @param joint_pub: ros_publisher where we publish commands for move head of the robot
         self.joint_pub = rospy.Publisher("joint_head_controller/command",Float64,queue_size=1)
 
-     ## @param vel_pub to move the whole robot 
+     	## @param vel_pub: ros_publisher  that send velocity command to the topic "cmd_vel" 
         self.vel_pub = rospy.Publisher("cmd_vel",Twist, queue_size=1)
 
-        ## subscribed Topic
-	### @param subsriber to get the compressed images from the camera  
+        ## SUBSCRIBERs 
+	### @param camera_sub: for receive the compressed image from the camera  
         self.camera_sub = rospy.Subscriber("camera1/image_raw/compressed",
                                            CompressedImage, self.callback,  queue_size=1)
 
-	## @stop it's a stop condition when the robot is too close to the goal 
+	## @stop boolean variable to stop the robot if is to close to the goal 
 	self.stop = False
 
     def callback(self, ros_data):
-        '''Callback function of subscribed topic. 
-        Here images get converted and features detected'''
+        ''' Callback function for the subscribed topic "camera1/image_raw/compressed", here the image is converted and is implemented the feature detection.  '''
+
         if VERBOSE:
             print ('received image of type: "%s"' % ros_data.format)
 
@@ -73,14 +73,11 @@ class image_feature:
         mask = cv2.inRange(hsv, greenLower, greenUpper)
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
-        #cv2.imshow('mask', mask)
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
         center = None
-        ## only proceed if at least one contour was found
 
-        # fare l else che metta il messaggio ObjDet = false
         if len(cnts) > 0:
             # find the largest contour in the mask, then use
             # it to compute the minimum enclosing circle and
@@ -98,14 +95,14 @@ class image_feature:
                            (0, 255, 255), 2)
                 cv2.circle(image_np, center, 5, (0, 0, 255), -1)
                 
-                msg = Ball_state()
+                msg = ball_status()
                 msg.ballDetected = True 		        
-                self.ball_state_pub.publish(msg)
+                self.ball_status_pub.publish(msg)
 		# check if the robot is reached the object 
 
         	if self.stop == False: 
 			
-			rospy.loginfo("Ball track")
+			rospy.loginfo("Ball tracking")
                 	vel = Twist()
                 	# 400 is the center of the image 
                 	vel.angular.z = -0.002*(center[0]-400)
@@ -115,29 +112,26 @@ class image_feature:
 			if radius > 129:
 				self.stop = True
 		else:
-			rospy.loginfo("goal reached")
+			rospy.loginfo("Goal Reached")
+			# Turn the head +90 deg
 			self.joint_pub.publish(0.785398) 
 			time.sleep(5)
+			# Turn the head -90 deg 
 			self.joint_pub.publish(-0.785398)
 			time.sleep(5)
+			# Turn head to be in the upright position
 			self.joint_pub.publish(0)
 			time.sleep(5)
 			self.stop = False
 
         else:
 	     rospy.loginfo("Ball lost ")
-	     msg = Ball_state()
+	     msg = ball_status()
              msg.ballDetected = False 
-             self.ball_state_pub.publish(msg)
+             self.ball_status_pub.publish(msg)
             
-
-        # update the points queue
-        # pts.appendleft(center)
         cv2.imshow('window', image_np)
         cv2.waitKey(2)
-
-        # self.subscriber.unregister()
-
 
 def main(args):
     '''Initializes and cleanup ros node'''

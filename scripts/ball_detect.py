@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+##@file ball_detect.py
+# This node is responsible for the ball detection, so implement all CV algorithm for recognize the ball, follow it and reache it. In fact the node publish to 2 topics: 
+#- image_raw/compressed (send compressed image)
+#- /ball_status 
+# And subscribe to:
+#- image_raw/compressed
+#- head_status (for controlling the head movement)
+
+
 # Python libs
 import sys
 import time
@@ -31,46 +40,44 @@ class image_feature:
 
     def __init__(self):
         '''Initialize ros publisher, ros subscriber'''
-     ## initialize the node 
+     	## Node Initialization 
         rospy.init_node('ball_detection', anonymous=True)
-     ## topic where we publish
-     ## @param image_pub publisher that send the processed and compressed images 
+
+	## PUBLISHERED TOPICS
+	## @param image_pub: ros_publisher that send the compressed image. 
         self.image_pub = rospy.Publisher("/output/image_raw/compressed",
                                          CompressedImage, queue_size=1)
-     ## @param vel_pub pub for send to the command manager information reguarding the ball and the corraction to       		##apply to the robot 
+     	## @param ball_status_pub: ros_publisher where we can find the INFO of the ball -> 2 bool one for check detection one for check if ball reached. 
         self.ball_status_pub = rospy.Publisher("ball_status",ball_status, queue_size=1)
 
-     ## @param joint_pub to move the head of the robot 
- #       self.joint_pub = rospy.Publisher("joint_head_controller/command",Float64,queue_size=1)
-
-     ## @param vel_pub to move the whole robot 
+     	## @param vel_pub: ros_publisher  that send velocity command to the topic "cmd_vel"
         self.vel_pub = rospy.Publisher("cmd_vel",Twist, queue_size=1)
 
-        ## subscribed Topic
-	### @param subsriber to get the compressed images from the camera  
+        ## SUBSCRIBED TOPIC
+	### @param camera_sub: for receive the compressed image from the camera
         self.camera_sub = rospy.Subscriber("camera1/image_raw/compressed",
                                            CompressedImage, self.callback,  queue_size=1)
+	## @param head_state_sub: information about the head -> 1 bool indicating if head moving or not.
+	self.head_state_sub = rospy.Subscriber("head_status",head_status, self.head_statusCallback, queue_size = 1)
 
-	self.head_state_pub = rospy.Subscriber("head_status",head_status, self.head_statusCallback, queue_size = 1)
-
-	## @head_status to check if the head is in the upright position
+	## @head_status: variable for check the head status (motion or not)
 	self.head_status = True
 
-	## @ball_reach variable that says whether the robot has reached the ball
+	## @ball_reach: variable for check if the ball reach
 	self.ball_reach = False 
 
-	## Callback function to update the head_status  
+	## Callback function updating head status 
     def head_statusCallback(self, data): 
 	self.head_status = data.HeadMotionStop
 
-	## Callback of the camera_sub subsriber which implements the whole CV algorithm  
+	## Callback of the camera_sub subscriber where it's implemented the CV algorithm 
     def callback(self, ros_data):
         '''Callback function of subscribed topic. 
         Here images get converted and features detected'''
         if VERBOSE:
             print ('received image of type: "%s"' % ros_data.format)
 
-        #### direct conversion to CV2 ####
+        #### Direct conversion to CV2 ####
         ## @param image_np is the image decompressed and converted in OpendCv
         np_arr = np.fromstring(ros_data.data, np.uint8)
         image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # OpenCV >= 3.0:
@@ -84,14 +91,11 @@ class image_feature:
         mask = cv2.inRange(hsv, greenLower, greenUpper)
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
-        #cv2.imshow('mask', mask)
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
         center = None
-        ## only proceed if at least one contour was found
-
-        # fare l else che metta il messaggio ObjDet = false
+      
         if len(cnts) > 0:
             # find the largest contour in the mask, then use
             # it to compute the minimum enclosing circle and
@@ -114,11 +118,9 @@ class image_feature:
 		msg.ball_reach = self.ball_reach
 	        
                 self.ball_status_pub.publish(msg)
-		# check if the robot is reached the object 
-
-        	 
+ 
 		if self.head_status == True:	
-			rospy.loginfo("BallDtection: ball detected !!! start moving ") 
+			rospy.loginfo("Ball Detected") 
 		        vel = Twist()
 		        # 400 is the center of the image 
 		        vel.angular.z = -0.002*(center[0]-400)
@@ -127,7 +129,7 @@ class image_feature:
 		        self.vel_pub.publish(vel)
 			self.ball_reach = False 
 			if (radius>=149) :
-				rospy.loginfo("BallDetection : ball reached!!")
+				rospy.loginfo("Ball Reached")
 				self.head_status = False
 				self.ball_reach = True 
 				msg.ball_reach = self.ball_reach		
