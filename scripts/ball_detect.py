@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-##@file ball_detect.py
+## @file ball_detect.py
 # This node is responsible for the ball detection, so implement all CV algorithm for recognize the ball, follow it and reache it. In fact the node publish to 2 topics: 
 #- image_raw/compressed (send compressed image)
 #- /ball_status 
@@ -152,7 +152,7 @@ class image_feature:
 
 
 def main(args):
-    '''Initializes and cleanup ros node'''
+    
     ic = image_feature()
     try:
         rospy.spin()
