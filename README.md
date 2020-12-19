@@ -59,6 +59,11 @@ The computer vision part is mainly inside the _ball_detection_ node where are im
             4. _go_to_point_ball.py_ action server which navigate the ball to a position w.r.t the client request.
 - __urdf__: all .xacro and .gazebo file for the simulation
 - __world__: model of the world used in the simulation
+## Documentation
+Html documentation of the project can be found at:
+```
+ file:///home/andrea/catkin_ws/src/exp_assignment2/doc/html/index.html 
+```
 #### Exectuables for testing
 Two executable files for add the ball and remove the ball in order to test the algorithm 
 - _add_ball.sh_ add the ball in position x = 3 and y = -5.
